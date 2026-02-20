@@ -27,3 +27,19 @@ My approach follows a structured machine learning pipeline:
 - **Data Preprocessing:** Handling categorical encoding and feature scaling using Scikit-learn.
 - **Model Development:** Establishing a baseline with Scikit-learn and developing a Deep Learning model using TensorFlow.
 - **Evaluation:** Assessing the model using Accuracy, Precision, and Recall metrics.
+
+## Data Preprocessing & Feature Engineering
+
+This phase focuses on transforming raw clinical data into a high-quality format optimized for Deep Learning (TensorFlow).
+1. **Outlier Management (Clinical Trimming)**
+- Medical data often contains extreme values that can disproportionately influence model weights.
+- Technique: Interquartile Range (IQR) Capping.
+- Application: Features like chol (Cholesterol) and trestbps (Resting Blood Pressure) showed significant right-skewed outliers.
+- Action: Values exceeding the Upper Fence ($Q3 + 1.5 \times IQR$) were capped at the threshold rather than removed, preserving the dataset size ($N=1,025$) while stabilizing the variance.
+2. **Feature Correlation & Selection**
+- To reduce model complexity and prevent Multicollinearity, I performed a statistical audit of the feature set.
+- Observation: Features like cp (Chest Pain Type) and thalach (Max Heart Rate) showed the highest absolute correlation with heart disease risk.
+- Redundancy Check: Verified that no two independent variables were perfectly correlated ($r > 0.9$), ensuring the model learns unique patterns from each feature.
+3. **Data Integrity & Checkpointing**
+- Handling Nulls: Confirmed 0 missing values; no imputation required.
+- Output: The processed data is exported to data/heart_cleaned.csv to ensure a consistent baseline for both Scikit-Learn and TensorFlow experiments.
