@@ -43,3 +43,25 @@ This phase focuses on transforming raw clinical data into a high-quality format 
 3. **Data Integrity & Checkpointing**
 - Handling Nulls: Confirmed 0 missing values; no imputation required.
 - Output: The processed data is exported to data/heart_cleaned.csv to ensure a consistent baseline for both Scikit-Learn and TensorFlow experiments.
+
+## Model training (Day 3)
+
+This stage trains and compares 7 baseline ML models on the cleaned dataset:
+- Logistic Regression
+- Random Forest
+- SVM
+- Naive Bayes
+- Decision Tree
+- LightGBM
+- XGBoost
+
+Saved outputs:
+- Trained model artifacts: `ml/models/*.joblib`
+- Model metrics table: `ml/models/model_results.csv`
+
+Run command:
+```bash
+python ml/run_training.py
+```
+
+Note: `compare_models.py` selects the top model and saves it to `ml/models/best_model.joblib`.
