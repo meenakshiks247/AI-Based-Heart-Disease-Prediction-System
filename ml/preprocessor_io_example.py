@@ -45,16 +45,30 @@ PREPROCESSOR_PATH = MODEL_DIR / "preprocessor.joblib"
 #     saved pipeline and round-trips it through joblib)
 # =====================================================================
 if __name__ == "__main__":
-    # Pick any saved pipeline that contains the preprocessor step
-    sample_pipeline_path = MODEL_DIR / "logistic_regression.joblib"
+    # Pick any saved pipeline that contains the preprocessor step.
+    # Prefer safe-pipeline models; fall back to legacy.
+    safe_path = MODEL_DIR / "logistic_regression_safe.joblib"
+    legacy_path = MODEL_DIR / "logistic_regression.joblib"
+
+    if safe_path.exists():
+        sample_pipeline_path = safe_path
+    elif legacy_path.exists():
+        sample_pipeline_path = legacy_path
+    else:
+        raise FileNotFoundError(
+            f"Neither {safe_path.name} nor {legacy_path.name} found in {MODEL_DIR}.\n"
+            "  Run  python ml/run_training.py  first."
+        )
+
     pipeline = joblib.load(sample_pipeline_path)
+    print(f"[INFO] Loaded pipeline from: {sample_pipeline_path.name}")
 
     # Extract the fitted preprocessor from the pipeline
     preprocessor = pipeline.named_steps["preprocessor"]
 
     # Save it standalone
     joblib.dump(preprocessor, PREPROCESSOR_PATH)
-    print(f"[SAVE] Preprocessor saved → {PREPROCESSOR_PATH}")
+    print(f"[SAVE] Preprocessor saved -> {PREPROCESSOR_PATH}")
 
     # Reload and verify with a single sample row
     pre = joblib.load(PREPROCESSOR_PATH)
@@ -64,10 +78,10 @@ if __name__ == "__main__":
         "oldpeak": 1.0, "slope": 2, "ca": 2, "thal": 3,
     }])
     transformed = pre.transform(sample)
-    print(f"[LOAD] Preprocessor reloaded — transformed shape: {transformed.shape}")
+    print(f"[LOAD] Preprocessor reloaded - transformed shape: {transformed.shape}")
     print(f"[LOAD] Transformed values:\n{transformed}\n")
 
-    # ⚠️  IMPORTANT
+    # IMPORTANT
     # The backend / inference service MUST use this exact preprocessor
     # so that feature ordering and scaling match what the model saw
     # during training.  A mismatch will silently produce wrong predictions.

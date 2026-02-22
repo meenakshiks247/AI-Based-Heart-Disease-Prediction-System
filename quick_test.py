@@ -4,7 +4,7 @@ import joblib, pandas as pd, numpy as np, os, sklearn, warnings
 warnings.filterwarnings("ignore")
 print("sklearn", sklearn.__version__)
 
-df = pd.read_csv("data/heart_cleaned.csv")
+df = pd.read_csv("ml/data/heart_cleaned.csv")
 sample = df.drop(columns=["target"]).iloc[[0]]
 true_label = df["target"].iloc[0]
 
@@ -15,20 +15,30 @@ header = f"{'Model':<32} {'Status':<6} {'Pred':<6} {'Prob(0)':<10} {'Prob(1)':<1
 print(header)
 print("-" * len(header))
 
+# Files that are not actual trained models — skip them.
+_SKIP_FILES = {"preprocessor.joblib", "backup_model.joblib", "best_model.joblib"}
+
 models_dir = "ml/models"
 for fname in sorted(os.listdir(models_dir)):
-    if fname.endswith(".joblib"):
-        path = os.path.join(models_dir, fname)
-        try:
-            model = joblib.load(path)
-            pred = model.predict(sample)[0]
-            prob_str_0, prob_str_1 = "-", "-"
-            if hasattr(model, "predict_proba"):
-                prob = model.predict_proba(sample)[0]
-                prob_str_0 = f"{prob[0]:.4f}"
-                prob_str_1 = f"{prob[1]:.4f}"
-            print(f"  {fname:<30} {'OK':<6} {pred:<6} {prob_str_0:<10} {prob_str_1:<10}")
-        except Exception as e:
-            print(f"  {fname:<30} {'FAIL':<6} {str(e)[:60]}")
+    if not fname.endswith(".joblib"):
+        continue
+    if fname in _SKIP_FILES:
+        continue
+
+    path = os.path.join(models_dir, fname)
+    try:
+        model = joblib.load(path)
+        if not hasattr(model, "predict"):
+            print(f"  {fname:<30} {'SKIP':<6} (not an estimator)")
+            continue
+        pred = model.predict(sample)[0]
+        prob_str_0, prob_str_1 = "-", "-"
+        if hasattr(model, "predict_proba"):
+            prob = model.predict_proba(sample)[0]
+            prob_str_0 = f"{prob[0]:.4f}"
+            prob_str_1 = f"{prob[1]:.4f}"
+        print(f"  {fname:<30} {'OK':<6} {pred:<6} {prob_str_0:<10} {prob_str_1:<10}")
+    except Exception as e:
+        print(f"  {fname:<30} {'FAIL':<6} {str(e)[:60]}")
 
 print(f"\nTrue label = {true_label}  (0 = No heart disease, 1 = Heart disease)")

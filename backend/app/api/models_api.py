@@ -11,21 +11,26 @@ router = APIRouter(prefix="/api/models", tags=["models"])
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _MODELS_DIR = _PROJECT_ROOT / "ml" / "models"
-_RESULTS_CSV = _MODELS_DIR / "model_results.csv"
+_RESULTS_SAFE_CSV = _MODELS_DIR / "model_results_safe.csv"
+_RESULTS_LEGACY_CSV = _MODELS_DIR / "model_results.csv"
 _BEST_INFO_JSON = _MODELS_DIR / "best_model_info.json"
 
 
 @router.get("/")
 def get_models() -> JSONResponse:
-    """Return model results summary from model_results.csv."""
-    if not _RESULTS_CSV.exists():
+    """Return model results summary, preferring safe pipeline results."""
+    if _RESULTS_SAFE_CSV.exists():
+        results_csv = _RESULTS_SAFE_CSV
+    elif _RESULTS_LEGACY_CSV.exists():
+        results_csv = _RESULTS_LEGACY_CSV
+    else:
         return JSONResponse(
             status_code=404,
-            content={"error": f"model results not found: {_RESULTS_CSV}"},
+            content={"error": "No model results found. Run the training pipeline first."},
         )
 
     models: list[dict[str, object]] = []
-    with _RESULTS_CSV.open("r", encoding="utf-8", newline="") as f:
+    with results_csv.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
             models.append(
@@ -35,7 +40,10 @@ def get_models() -> JSONResponse:
                 }
             )
 
-    return JSONResponse(content={"models": models})
+    return JSONResponse(content={
+        "source": "safe" if results_csv == _RESULTS_SAFE_CSV else "legacy",
+        "models": models,
+    })
 
 
 @router.get("/best")
