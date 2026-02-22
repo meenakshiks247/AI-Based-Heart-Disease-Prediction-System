@@ -43,6 +43,10 @@ This phase focuses on transforming raw clinical data into a high-quality format 
 3. **Data Integrity & Checkpointing**
 - Handling Nulls: Confirmed 0 missing values; no imputation required.
 - Output: The processed data is exported to data/heart_cleaned.csv to ensure a consistent baseline for both Scikit-Learn and TensorFlow experiments.
+4. **Duplicate Value Removal**
+- Exact duplicate records are detected and removed before safe training.
+- Main utility: `ml/deduplicate.py` (supports `keep-first`, `keep-random`, and `keep-most-representative` strategies).
+- Deduplicated output: `ml/data/heart_cleaned_dedup.csv`.
 
 ## Model training (Day 3)
 
@@ -65,3 +69,46 @@ python ml/run_training.py
 ```
 
 Note: `compare_models.py` selects the top model and saves it to `ml/models/best_model.joblib`.
+
+## Safe Training Pipeline
+
+To reduce leakage/overfitting risk, the project also includes a safe data + training flow:
+
+1. Deduplicate:
+```bash
+python ml/deduplicate.py --strategy keep-first
+```
+
+2. Stratified split:
+```bash
+python ml/safe_split.py
+```
+
+3. Train with CV on train split:
+```bash
+python ml/train_models_safe.py
+```
+
+4. Select best safe model:
+```bash
+python ml/compare_models.py
+```
+
+Safe outputs:
+- CV results: `ml/models/model_results_safe.csv`
+- Saved safe models: `ml/models/*_safe.joblib`
+- Selected best model: `ml/models/best_model.joblib`
+- Best-model metadata: `ml/models/best_model_info.json`
+
+## Data Quality & Leakage Utilities
+
+- Duplicate inspection: `python ml/check_duplicates.py [--drop]`
+- Leakage scan per feature: `python ml/leakage_scan.py`
+- Overfitting verification: `python ml/verify_overfitting.py --data ml/data/heart_cleaned.csv`
+
+## Backend Integration
+
+- Model loader: `backend/app/ml/load_model.py`
+- API routes: `backend/app/api/models_api.py`
+  - `GET /api/models/`
+  - `GET /api/models/best`
