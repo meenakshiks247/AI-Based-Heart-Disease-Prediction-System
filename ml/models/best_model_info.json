@@ -1,9 +1,8 @@
 {
-  "model_name": "random_forest",
-  "accuracy": 1.0,
-  "precision": 1.0,
-  "recall": 1.0,
-  "f1": 1.0,
-  "roc_auc": 1.0,
-  "training_time_seconds": 0.6498164000222459
+  "model_name": "logistic_regression",
+  "roc_auc": 0.9149184149184147,
+  "accuracy": 0.8379251700680272,
+  "precision": 0.823922273922274,
+  "recall": 0.9082621082621084,
+  "f1": 0.8607171305284511
 }
