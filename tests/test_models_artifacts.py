@@ -8,10 +8,27 @@ import pandas as pd
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = PROJECT_ROOT / "ml" / "models"
 
+# Prefer safe results; fall back to legacy.
+_SAFE_CSV = MODELS_DIR / "model_results_safe.csv"
+_LEGACY_CSV = MODELS_DIR / "model_results.csv"
+
+
+def _resolve_results_csv() -> Path:
+    """Return whichever results CSV exists, preferring safe."""
+    if _SAFE_CSV.exists():
+        print("Using SAFE model results")
+        return _SAFE_CSV
+    if _LEGACY_CSV.exists():
+        print("Using legacy model results")
+        return _LEGACY_CSV
+    raise FileNotFoundError(
+        f"Neither {_SAFE_CSV.name} nor {_LEGACY_CSV.name} found in {MODELS_DIR}"
+    )
+
 
 def test_model_artifacts_exist() -> None:
     """Ensure expected model artifacts are present without running training."""
-    results_csv = MODELS_DIR / "model_results.csv"
+    results_csv = _resolve_results_csv()
     best_model = MODELS_DIR / "best_model.joblib"
     joblib_files = list(MODELS_DIR.glob("*.joblib"))
 
@@ -22,8 +39,8 @@ def test_model_artifacts_exist() -> None:
 
 
 def test_model_results_schema() -> None:
-    """Validate model_results.csv contains required metric columns."""
-    results_csv = MODELS_DIR / "model_results.csv"
+    """Validate model results CSV contains required metric columns."""
+    results_csv = _resolve_results_csv()
     assert results_csv.exists(), f"Missing required artifact: {results_csv}"
 
     df = pd.read_csv(results_csv)
