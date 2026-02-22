@@ -8,6 +8,7 @@ import joblib
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
@@ -22,6 +23,7 @@ from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 
 SEED = 42
+LEAK_CHECK = True
 
 
 def load_dataset(data_path: Path) -> tuple[pd.DataFrame, pd.Series]:
@@ -40,10 +42,16 @@ def load_dataset(data_path: Path) -> tuple[pd.DataFrame, pd.Series]:
     return X, y
 
 
-def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
-    """Scale numeric columns and passthrough non-numeric columns."""
-    numeric_features = X.select_dtypes(include=[np.number]).columns.tolist()
-    categorical_features = [col for col in X.columns if col not in numeric_features]
+def build_preprocessor(X_ref: pd.DataFrame) -> ColumnTransformer:
+    """Construct an *unfitted* preprocessor based on column types in *X_ref*.
+
+    The caller must pass **training data only** so that column-type
+    detection never peeks at the test set.  The returned object is
+    unfitted — fitting must happen downstream (e.g. inside a Pipeline
+    that is fit on X_train).
+    """
+    numeric_features = X_ref.select_dtypes(include=[np.number]).columns.tolist()
+    categorical_features = [col for col in X_ref.columns if col not in numeric_features]
 
     print(f"[INFO] Numeric features to scale: {len(numeric_features)}")
     print(f"[INFO] Non-numeric features passthrough: {len(categorical_features)}")
@@ -65,6 +73,33 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     # Keep DataFrame output so downstream estimators consistently receive feature names.
     preprocessor.set_output(transform="pandas")
     return preprocessor
+
+
+def run_leak_check(
+    X_full: pd.DataFrame,
+    X_train: pd.DataFrame,
+    preprocessor: ColumnTransformer,
+) -> None:
+    """Smoke-check: compare preprocessor means fitted on full X vs X_train only."""
+    try:
+        full_pp = clone(preprocessor)
+        full_pp.fit(X_full)
+        train_pp = clone(preprocessor)
+        train_pp.fit(X_train)
+
+        # Extract scaler means from the numeric sub-pipeline
+        full_means = full_pp.named_transformers_["num"]["scaler"].mean_
+        train_means = train_pp.named_transformers_["num"]["scaler"].mean_
+
+        if np.array_equal(full_means, train_means):
+            print(
+                "[WARNING] Preprocessor means from full X and train-only X are "
+                "identical — potential data leakage!"
+            )
+        else:
+            print("[INFO] Leak check passed: train-only preprocessor differs from full-X preprocessor.")
+    except Exception as exc:
+        print(f"[WARNING] Leak check could not run: {exc}")
 
 
 def build_models() -> dict[str, Any]:
@@ -115,7 +150,7 @@ def evaluate_model(
 
     pipeline = Pipeline(
         steps=[
-            ("preprocessor", preprocessor),
+            ("preprocessor", clone(preprocessor)),
             ("model", model),
         ]
     )
@@ -172,7 +207,14 @@ def main() -> None:
         f"train={X_train.shape[0]} rows, test={X_test.shape[0]} rows"
     )
 
-    preprocessor = build_preprocessor(X)
+    # Build preprocessor from X_train only — never peek at test data.
+    preprocessor = build_preprocessor(X_train)
+    print("[INFO] Fitting preprocessor on training data only")
+
+    # Optional smoke-check: verify train-only means differ from full-X means.
+    if LEAK_CHECK:
+        run_leak_check(X, X_train, preprocessor)
+
     models = build_models()
 
     all_results: list[dict[str, float | str]] = []
@@ -197,6 +239,13 @@ def main() -> None:
 
     results_df.to_csv(csv_path, index=False)
     results_df.to_json(json_path, orient="records", indent=2)
+
+    # Save a standalone fitted preprocessor (fitted on X_train only).
+    fitted_preprocessor = clone(preprocessor)
+    fitted_preprocessor.fit(X_train)
+    preprocessor_path = model_dir / "preprocessor.joblib"
+    joblib.dump(fitted_preprocessor, preprocessor_path)
+    print(f"[INFO] Saved preprocessor to {preprocessor_path}")
 
     print(f"\n[INFO] Saved model comparison CSV: {csv_path}")
     print(f"[INFO] Saved model comparison JSON: {json_path}")
