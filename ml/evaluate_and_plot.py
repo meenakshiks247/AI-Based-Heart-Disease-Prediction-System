@@ -264,6 +264,9 @@ def main() -> None:
 
         print(f"\n[INFO] Evaluating model: {display_name}  ({model_path.name})")
 
+        # Use the file stem for output naming so plots match their model file.
+        file_stem = model_path.stem  # e.g. "decision_tree_safe"
+
         y_pred = obj.predict(X_test)
         y_scores = get_roc_scores(obj, X_test)
 
@@ -272,18 +275,18 @@ def main() -> None:
         roc_auc = save_roc_plot(
             y_true=y_test,
             y_scores=y_scores,
-            out_path=model_dir / f"{display_name}_roc.png",
+            out_path=model_dir / f"{file_stem}_roc.png",
             model_name=display_name,
         )
         save_confusion_plot(
             y_true=y_test,
             y_pred=y_pred,
-            out_path=model_dir / f"{display_name}_confusion.png",
+            out_path=model_dir / f"{file_stem}_confusion.png",
             model_name=display_name,
         )
 
-        print(f"[INFO] Saved: {display_name}_confusion.png")
-        print(f"[INFO] Saved: {display_name}_roc.png")
+        print(f"[INFO] Saved: {file_stem}_confusion.png")
+        print(f"[INFO] Saved: {file_stem}_roc.png")
 
         results.append(
             {
