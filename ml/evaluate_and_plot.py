@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     accuracy_score,
@@ -14,36 +16,106 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
-from sklearn.model_selection import train_test_split
 
 SEED = 42
+TARGET_COL = "target"
 
 
-def load_test_set(data_path: Path) -> tuple[pd.DataFrame, pd.Series]:
-    """Load dataset and recreate the same test split used during training."""
-    print(f"[INFO] Loading dataset from: {data_path}")
-    if not data_path.exists():
-        raise FileNotFoundError(f"Dataset not found at '{data_path}'.")
+# ── Data loading ─────────────────────────────────────────────────────
 
-    df = pd.read_csv(data_path)
-    if "target" not in df.columns:
-        raise ValueError("Target column 'target' was not found in dataset.")
 
-    X = df.drop(columns=["target"])
-    y = df["target"]
+def load_test_set(test_path: Path) -> tuple[pd.DataFrame, pd.Series]:
+    """Load the held-out test split produced by the safe pipeline."""
+    if not test_path.exists():
+        raise FileNotFoundError(f"Test data not found: {test_path}")
 
-    _, X_test, _, y_test = train_test_split(
-        X,
-        y,
-        test_size=0.2,
-        stratify=y,
-        random_state=SEED,
-    )
-    print(f"[INFO] Test set prepared: {X_test.shape[0]} rows")
+    df = pd.read_csv(test_path)
+    if TARGET_COL not in df.columns:
+        raise ValueError(f"Target column '{TARGET_COL}' not found in {test_path}")
+
+    X_test = df.drop(columns=[TARGET_COL])
+    y_test = df[TARGET_COL]
+    print(f"[INFO] Loaded test set: {X_test.shape[0]} rows, {X_test.shape[1]} features")
     return X_test, y_test
 
 
-def get_roc_scores(model, X_test: pd.DataFrame) -> np.ndarray | None:
+# ── Model discovery ──────────────────────────────────────────────────
+
+
+def resolve_model_list(
+    model_dir: Path,
+    override_names: list[str] | None = None,
+) -> tuple[list[tuple[str, Path]], str]:
+    """Return an ordered list of (display_name, joblib_path) pairs.
+
+    Strategy:
+        1. If *override_names* is given, use those names directly (try
+           ``<name>_safe.joblib`` first, then ``<name>.joblib``).
+        2. Otherwise read the canonical model list from the results CSV
+           (safe preferred, legacy fallback).
+
+    Returns:
+        (model_list, source)  where *source* is ``"safe"`` or ``"legacy"``.
+    """
+    safe_csv = model_dir / "model_results_safe.csv"
+    legacy_csv = model_dir / "model_results.csv"
+
+    # Determine source
+    if safe_csv.exists():
+        source = "safe"
+        print("[INFO] Using safe model results")
+    elif legacy_csv.exists():
+        source = "legacy"
+        print("[WARN] Falling back to legacy model results")
+    else:
+        raise FileNotFoundError(
+            f"Neither '{safe_csv.name}' nor '{legacy_csv.name}' found in {model_dir}.\n"
+            "  Suggested fix: run  python ml/run_training.py  to train models first."
+        )
+
+    # Build name list
+    if override_names:
+        names = override_names
+        print(f"[INFO] --models override: evaluating {names}")
+    else:
+        csv_path = safe_csv if source == "safe" else legacy_csv
+        df = pd.read_csv(csv_path)
+        if "model_name" not in df.columns:
+            raise ValueError(f"'model_name' column missing in {csv_path}")
+        names = df["model_name"].tolist()
+
+    # Resolve to file paths
+    models: list[tuple[str, Path]] = []
+    for name in names:
+        if source == "safe":
+            candidates = [
+                model_dir / f"{name}_safe.joblib",
+                model_dir / f"{name}.joblib",
+            ]
+        else:
+            candidates = [
+                model_dir / f"{name}.joblib",
+                model_dir / f"{name}_safe.joblib",
+            ]
+
+        resolved = None
+        for c in candidates:
+            if c.exists():
+                resolved = c
+                break
+
+        if resolved is None:
+            print(f"[WARN] Skipping missing: {candidates[0].name}")
+        else:
+            models.append((name, resolved))
+
+    return models, source
+
+
+# ── Plotting helpers ─────────────────────────────────────────────────
+
+
+def get_roc_scores(model: object, X_test: pd.DataFrame) -> np.ndarray | None:
     """Get continuous scores for ROC; return None if unavailable."""
     if hasattr(model, "predict_proba"):
         probs = model.predict_proba(X_test)
@@ -55,7 +127,9 @@ def get_roc_scores(model, X_test: pd.DataFrame) -> np.ndarray | None:
     return None
 
 
-def save_confusion_plot(y_true: pd.Series, y_pred: np.ndarray, out_path: Path, model_name: str) -> None:
+def save_confusion_plot(
+    y_true: pd.Series, y_pred: np.ndarray, out_path: Path, model_name: str,
+) -> None:
     """Save confusion matrix figure."""
     cm = confusion_matrix(y_true, y_pred)
     fig, ax = plt.subplots(figsize=(6, 5))
@@ -67,13 +141,16 @@ def save_confusion_plot(y_true: pd.Series, y_pred: np.ndarray, out_path: Path, m
     plt.close(fig)
 
 
-def save_roc_plot(y_true: pd.Series, y_scores: np.ndarray | None, out_path: Path, model_name: str) -> float:
+def save_roc_plot(
+    y_true: pd.Series, y_scores: np.ndarray | None, out_path: Path, model_name: str,
+) -> float:
     """Save ROC figure and return ROC-AUC (NaN if unavailable)."""
     fig, ax = plt.subplots(figsize=(6, 5))
     roc_auc = float("nan")
 
     if y_scores is None:
-        ax.text(0.5, 0.5, "ROC unavailable\n(no predict_proba/decision_function)", ha="center", va="center")
+        ax.text(0.5, 0.5, "ROC unavailable\n(no predict_proba/decision_function)",
+                ha="center", va="center")
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.set_title(f"ROC Curve - {model_name}")
@@ -110,70 +187,122 @@ def save_leaderboard(results_df: pd.DataFrame, out_path: Path) -> None:
     plt.close(fig)
 
 
-def print_best_summary(results_df: pd.DataFrame) -> None:
-    """Print best model for key metrics."""
-    for metric in ["accuracy", "f1", "roc_auc"]:
-        valid = results_df.dropna(subset=[metric])
-        if valid.empty:
-            print(f"[SUMMARY] Best {metric}: unavailable")
-            continue
-        best = valid.loc[valid[metric].idxmax()]
-        print(f"[SUMMARY] Best {metric}: {best['model_name']} ({best[metric]:.4f})")
+def print_summary_table(results_df: pd.DataFrame) -> None:
+    """Print a concise summary table of evaluated models."""
+    summary = (
+        results_df
+        .sort_values("roc_auc", ascending=False)
+        .reset_index(drop=True)
+    )
+    print("\n" + "=" * 60)
+    print("EVALUATION SUMMARY")
+    print("=" * 60)
+    header = f"{'Model':<25} {'ROC AUC':>10} {'F1':>10} {'Accuracy':>10}"
+    print(header)
+    print("-" * len(header))
+    for _, row in summary.iterrows():
+        roc = f"{row['roc_auc']:.4f}" if pd.notna(row["roc_auc"]) else "   N/A"
+        f1 = f"{row['f1']:.4f}" if pd.notna(row["f1"]) else "   N/A"
+        acc = f"{row['accuracy']:.4f}" if pd.notna(row["accuracy"]) else "   N/A"
+        print(f"{row['model_name']:<25} {roc:>10} {f1:>10} {acc:>10}")
+    print("=" * 60)
+
+
+# ── Main ─────────────────────────────────────────────────────────────
+
+
+def is_estimator(obj: object) -> bool:
+    """Check whether a loaded object is a usable estimator / pipeline."""
+    return (
+        hasattr(obj, "predict")
+        or isinstance(obj, BaseEstimator)
+        or hasattr(obj, "predict_proba")
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Evaluate trained models and generate plots.",
+    )
+    parser.add_argument(
+        "--models",
+        type=str,
+        default=None,
+        help="Comma-separated list of model names to evaluate (overrides CSV list).",
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
+    args = parse_args()
     base_dir = Path(__file__).resolve().parent
-    data_path = base_dir / "data" / "heart_cleaned.csv"
+    test_path = base_dir / "data" / "test.csv"
     model_dir = base_dir / "models"
     model_dir.mkdir(parents=True, exist_ok=True)
 
-    X_test, y_test = load_test_set(data_path)
+    # Load test data
+    X_test, y_test = load_test_set(test_path)
 
-    model_files = sorted(model_dir.glob("*.joblib"))
-    if not model_files:
-        raise FileNotFoundError(f"No trained model files found in '{model_dir}'.")
+    # Resolve model list from CSV (or --models override)
+    override_names = [n.strip() for n in args.models.split(",")] if args.models else None
+    model_list, source = resolve_model_list(model_dir, override_names)
 
+    if not model_list:
+        raise RuntimeError(
+            "No valid model files to evaluate.\n"
+            "  Suggested fix: run  python ml/run_training.py  to train models first."
+        )
+
+    # Evaluate each model
     results: list[dict[str, float | str]] = []
-    for model_file in model_files:
-        model_name = model_file.stem
-        print(f"\n[INFO] Evaluating model: {model_name}")
-        model = joblib.load(model_file)
+    for display_name, model_path in model_list:
+        obj = joblib.load(model_path)
 
-        y_pred = model.predict(X_test)
-        y_scores = get_roc_scores(model, X_test)
+        if not is_estimator(obj):
+            print(f"\n[DEBUG] Skipping non-estimator artifact: {model_path.name}")
+            continue
+
+        print(f"\n[INFO] Evaluating model: {display_name}  ({model_path.name})")
+
+        y_pred = obj.predict(X_test)
+        y_scores = get_roc_scores(obj, X_test)
 
         acc = accuracy_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred, zero_division=0)
+        f1_val = f1_score(y_test, y_pred, zero_division=0)
         roc_auc = save_roc_plot(
             y_true=y_test,
             y_scores=y_scores,
-            out_path=model_dir / f"{model_name}_roc.png",
-            model_name=model_name,
+            out_path=model_dir / f"{display_name}_roc.png",
+            model_name=display_name,
         )
         save_confusion_plot(
             y_true=y_test,
             y_pred=y_pred,
-            out_path=model_dir / f"{model_name}_confusion.png",
-            model_name=model_name,
+            out_path=model_dir / f"{display_name}_confusion.png",
+            model_name=display_name,
         )
 
-        print(f"[INFO] Saved: {model_dir / f'{model_name}_confusion.png'}")
-        print(f"[INFO] Saved: {model_dir / f'{model_name}_roc.png'}")
+        print(f"[INFO] Saved: {display_name}_confusion.png")
+        print(f"[INFO] Saved: {display_name}_roc.png")
 
         results.append(
             {
-                "model_name": model_name,
+                "model_name": display_name,
                 "accuracy": acc,
-                "f1": f1,
+                "f1": f1_val,
                 "roc_auc": roc_auc,
             }
         )
 
     results_df = pd.DataFrame(results)
+
+    # Leaderboard chart
     leaderboard_path = model_dir / "roc_leaderboard.png"
     save_leaderboard(results_df, leaderboard_path)
     print(f"\n[INFO] Saved leaderboard: {leaderboard_path}")
-    print_best_summary(results_df)
+
+    # Summary table
+    print_summary_table(results_df)
 
 
 if __name__ == "__main__":
