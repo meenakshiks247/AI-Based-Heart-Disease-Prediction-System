@@ -2,6 +2,7 @@
     "name": "heart-frontend",
     "version": "0.0.1",
     "private": true,
+    "type": "module",
     "scripts": {
         "dev": "vite",
         "build": "vite build",
@@ -12,6 +13,7 @@
         "react-dom": "^18.2.0"
     },
     "devDependencies": {
+        "@vitejs/plugin-react": "^5.1.4",
         "vite": "^5.0.0"
     }
 }
