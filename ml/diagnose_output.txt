@@ -1,0 +1,45 @@
+============================================================
+1. MODEL INSPECTION
+============================================================
+  Type          : Pipeline
+  Steps         : [('preprocessor', 'ColumnTransformer'), ('model', 'LogisticRegression')]
+  Feature order : ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg', 'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal']
+  Scaler mean   : [5.41950207e+01 6.76348548e-01 9.83402490e-01 1.31091286e+02
+ 2.46236515e+02 1.36929461e-01 5.35269710e-01 1.50825726e+02
+ 2.98755187e-01 9.95435685e-01 1.42323651e+00 7.59336100e-01
+ 2.33609959e+00]
+  Scaler scale  : [ 9.00526218  0.46786877  1.03051695 16.14688692 48.67435694  0.34377287
+  0.53099065 22.47272949  0.45771227  1.1466078   0.60711506  1.0506696
+  0.61710048]
+  model.classes_: [0 1]
+
+============================================================
+2. TARGET LABEL CHECK
+============================================================
+  target unique : [0, 1]
+  target counts :
+target
+1    131
+0    110
+
+============================================================
+3. CATEGORICAL VALUE RANGES (training data)
+============================================================
+  sex        : [0, 1]
+  cp         : [0, 1, 2, 3]
+  fbs        : [0, 1]
+  restecg    : [0, 1, 2]
+  exang      : [0, 1]
+  slope      : [0, 1, 2]
+  ca         : [0, 1, 2, 3, 4]
+  thal       : [0, 1, 2, 3]
+
+============================================================
+4. DIAGNOSTIC PREDICTIONS
+============================================================
+  HEALTHY  => pred=1, proba_class0=0.0226, proba_class1=0.9774
+  RISKY    => pred=0, proba_class0=0.9951, proba_class1=0.0049
+  DEFAULT  => pred=0, proba_class0=0.6760, proba_class1=0.3240
+
+  classes_[0] = 'no disease', classes_[1] = 'disease'
+  predict_proba(X)[0][1] = probability of DISEASE (class 1)
