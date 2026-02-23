@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.models_api import router as models_router
+from app.api.predict import router as predict_router
+
 
 app = FastAPI(
     title="Heart Disease Prediction API",
@@ -18,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(models_router)
+app.include_router(predict_router)
 
 
 @app.get("/")
