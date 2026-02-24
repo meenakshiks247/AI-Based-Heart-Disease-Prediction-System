@@ -1,9 +1,40 @@
 import React, { useState } from 'react'
 
+/* ─── SVG icons ─── */
+const StethoscopeIcon = () => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4.8 2.3A2 2 0 0 0 3 4.5v3a6 6 0 0 0 12 0v-3a2 2 0 0 0-1.8-2.2" />
+        <path d="M8 15a6 6 0 0 0 6 6h1a4 4 0 0 0 4-4v-3" />
+        <circle cx="19" cy="11" r="2" />
+        <line x1="5" y1="1" x2="5" y2="4" />
+        <line x1="13" y1="1" x2="13" y2="4" />
+    </svg>
+)
+
+const HeartIcon = () => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.4 4.6a5.5 5.5 0 0 0-7.8 0L12 5.2l-.6-.6a5.5 5.5 0 0 0-7.8 7.8l.6.6L12 20.8l7.8-7.8.6-.6a5.5 5.5 0 0 0 0-7.8z" />
+    </svg>
+)
+
+const InfoIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <circle cx="12" cy="8" r="0.5" fill="currentColor" />
+    </svg>
+)
+
 /* ─── model definitions ─── */
 const MODELS = {
     clinical: {
-        label: 'Clinical (Cleveland) Model',
+        label: 'Clinical Heart Check',
+        subtitle: 'Detailed assessment using medical test indicators.',
+        icon: StethoscopeIcon,
+        tooltip: 'Uses 13 clinical features from the UCI Cleveland dataset (303 patients). Best suited when ECG, blood work, and stress-test results are available.',
         endpoint: 'http://127.0.0.1:8000/api/predict/',
         note: null,
         defaults: {
@@ -21,9 +52,12 @@ const MODELS = {
         floatFields: ['oldpeak'],
     },
     cardio: {
-        label: 'Population (Cardio) Model',
+        label: 'Lifestyle Heart Risk Check',
+        subtitle: 'Quick screening based on lifestyle and health factors.',
+        icon: HeartIcon,
+        tooltip: 'Uses 11 lifestyle & biometric features from the Kaggle Cardiovascular dataset (68k+ patients). Works with basic info like height, weight, BP, and habits.',
         endpoint: 'http://127.0.0.1:8000/api/predict/cardio/',
-        note: 'Population model trained on 68k samples — uses a different feature set.',
+        note: null,
         defaults: {
             age: 50, sex: 2, height: 168, weight: 62, systolic_bp: 120,
             diastolic_bp: 80, cholesterol: 1, gluc: 1, smoke: 0, alco: 0, active: 1,
@@ -50,8 +84,7 @@ export default function App() {
     const [fieldErrors, setFieldErrors] = useState({})
 
     /* switch model — reset form, result, errors */
-    const handleModelChange = (e) => {
-        const key = e.target.value
+    const handleModelChange = (key) => {
         setModelKey(key)
         setFormData({ ...MODELS[key].defaults })
         setResult(null)
@@ -127,22 +160,32 @@ export default function App() {
                 </p>
             </header>
 
-            <form className="form" onSubmit={handleSubmit}>
-                {/* ─── model selector ─── */}
-                <div className="field model-selector">
-                    <label htmlFor="model-select">Model</label>
-                    <select
-                        id="model-select"
-                        value={modelKey}
-                        onChange={handleModelChange}
-                    >
-                        {Object.entries(MODELS).map(([key, m]) => (
-                            <option key={key} value={key}>{m.label}</option>
-                        ))}
-                    </select>
-                </div>
+            {/* ─── model card selector ─── */}
+            <div className="card-selector">
+                {Object.entries(MODELS).map(([key, m]) => {
+                    const Icon = m.icon
+                    return (
+                        <button
+                            key={key}
+                            type="button"
+                            className={`model-card ${modelKey === key ? 'model-card--active' : ''}`}
+                            onClick={() => handleModelChange(key)}
+                        >
+                            <span className="model-card__icon"><Icon /></span>
+                            <span className="model-card__text">
+                                <span className="model-card__title">{m.label}</span>
+                                <span className="model-card__subtitle">{m.subtitle}</span>
+                            </span>
+                            <span className="model-card__tooltip-trigger">
+                                <InfoIcon />
+                                <span className="model-card__tooltip">{m.tooltip}</span>
+                            </span>
+                        </button>
+                    )
+                })}
+            </div>
 
-                {model.note && <p className="model-note">{model.note}</p>}
+            <form className="form" onSubmit={handleSubmit}>
 
                 <div className="grid">
                     {Object.keys(model.defaults).map((key) => (
@@ -184,7 +227,6 @@ export default function App() {
                         Probability:{' '}
                         <strong>{(result.probability * 100).toFixed(1)}%</strong>
                     </p>
-                    <p className="model">Model: {result.model_name}</p>
                 </div>
             )}
 
@@ -273,48 +315,122 @@ export default function App() {
           box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.25);
         }
 
-        /* ─── model selector ─── */
-        .model-selector {
-          margin-bottom: 20px;
+        /* ─── card selector ─── */
+        .card-selector {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 16px;
+          margin-bottom: 28px;
         }
 
-        .model-selector select {
-          width: 100%;
-          padding: 10px 12px;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          border-radius: 8px;
-          background: rgba(255, 255, 255, 0.08);
-          color: #f0f0f0;
-          font-size: 1rem;
-          outline: none;
+        .model-card {
+          position: relative;
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+          padding: 20px 18px;
+          border-radius: 14px;
+          border: 1.5px solid rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.04);
+          color: #c5c3d4;
           cursor: pointer;
-          transition: border-color 0.2s, box-shadow 0.2s;
-          appearance: none;
-          -webkit-appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
+          text-align: left;
+          font-family: inherit;
+          transition: border-color 0.25s, background 0.25s, box-shadow 0.25s, transform 0.15s;
+          outline: none;
         }
 
-        .model-selector select:focus {
+        .model-card:hover {
+          background: rgba(255, 255, 255, 0.07);
+          border-color: rgba(127, 90, 240, 0.35);
+          transform: translateY(-2px);
+        }
+
+        .model-card--active {
           border-color: #7f5af0;
-          box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.25);
+          background: rgba(127, 90, 240, 0.12);
+          box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.2), 0 4px 20px rgba(127, 90, 240, 0.15);
+          color: #e0e0e0;
         }
 
-        .model-selector select option {
-          background: #24243e;
+        .model-card--active .model-card__icon {
+          color: #7f5af0;
+        }
+
+        .model-card__icon {
+          flex-shrink: 0;
+          margin-top: 2px;
+          color: #888;
+          transition: color 0.25s;
+        }
+
+        .model-card__text {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex: 1;
+        }
+
+        .model-card__title {
+          font-size: 1rem;
+          font-weight: 700;
           color: #f0f0f0;
+          line-height: 1.3;
         }
 
-        .model-note {
-          margin-bottom: 18px;
-          padding: 10px 14px;
-          border-radius: 8px;
-          background: rgba(127, 90, 240, 0.1);
-          border: 1px solid rgba(127, 90, 240, 0.25);
+        .model-card__subtitle {
+          font-size: 0.82rem;
+          color: #999;
+          line-height: 1.4;
+        }
+
+        .model-card--active .model-card__subtitle {
           color: #b0aec1;
-          font-size: 0.85rem;
-          text-align: center;
+        }
+
+        /* ─── tooltip ─── */
+        .model-card__tooltip-trigger {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          color: #666;
+          cursor: help;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px;
+          height: 22px;
+          border-radius: 50%;
+          transition: color 0.2s, background 0.2s;
+        }
+
+        .model-card__tooltip-trigger:hover {
+          color: #b0aec1;
+          background: rgba(255, 255, 255, 0.08);
+        }
+
+        .model-card__tooltip {
+          display: none;
+          position: absolute;
+          top: 100%;
+          right: 0;
+          margin-top: 6px;
+          width: 260px;
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: #1e1b38;
+          border: 1px solid rgba(127, 90, 240, 0.3);
+          color: #c5c3d4;
+          font-size: 0.78rem;
+          line-height: 1.5;
+          font-weight: 400;
+          z-index: 100;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+          pointer-events: none;
+        }
+
+        .model-card__tooltip-trigger:hover .model-card__tooltip {
+          display: block;
         }
 
         /* ─── inline validation errors ─── */
@@ -409,6 +525,7 @@ export default function App() {
 
         /* ─── responsive ─── */
         @media (max-width: 480px) {
+          .card-selector { grid-template-columns: 1fr; }
           .grid { grid-template-columns: 1fr; }
           .header h1 { font-size: 1.5rem; }
           .form { padding: 20px; }
