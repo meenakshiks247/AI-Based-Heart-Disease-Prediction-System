@@ -1,114 +1,320 @@
-## Project Overview
-Cardiovascular diseases (CVDs) are the leading cause of death globally. Early detection is critical for effective treatment and lifestyle intervention. 
-This project aims to assist healthcare professionals in early diagnosis by identifying high-risk patients through data analysis. It utilizes a 14-feature clinical dataset to classify patients into "At Risk" or "Healthy" categories.
+# 🫀 AI-Based Heart Disease Prediction System
 
-## Tech Stack
-- **Language:**  Python 3.x
-- **Data Analysis:** Pandas, NumPy
-- **Visualization:** Matplotlib, Seaborn
-- **Machine Learning:** Scikit-learn (for baseline models)
-- **Deep Learning:** TensorFlow / Keras (for the final predictive model)
+---
 
-### Key Objectives:
-* **Predictive Modeling:** Build a binary classifier to categorize patients into 'Healthy' or 'At Risk'.
-* **Clinical Insight:** Identify the most significant risk factors (features) contributing to heart disease using correlation analysis.
-* **Scalable AI:** Utilize a Deep Learning approach with **TensorFlow** to improve upon traditional baseline machine learning models.
-  
-## Dataset
-- The project uses the UCI Heart Disease Dataset (Cleveland version).
-- **Link:** https://www.kaggle.com/datasets/johnsmith88/heart-disease-dataset
-- **Features:** 13 clinical attributes (Age, Sex, Chest Pain Type, Cholesterol, Resting BP, etc.).
-- **Target:** Binary classification (1 = Presence of disease, 0 = Absence).
+## 1️⃣ Project Overview
 
-## Solution Approach
+Cardiovascular diseases (CVDs) are the leading cause of death globally. Early detection enables timely medical intervention and lifestyle modification. This project provides a **full-stack AI healthcare decision-support system** that predicts heart disease risk using both **clinical diagnostic data** and **large-scale population screening data**.
 
-My approach follows a structured machine learning pipeline:
-- **Exploratory Data Analysis (EDA):** Visualizing correlations between clinical features and heart disease risk.
-- **Data Preprocessing:** Handling categorical encoding and feature scaling using Scikit-learn.
-- **Model Development:** Establishing a baseline with Scikit-learn and developing a Deep Learning model using TensorFlow.
-- **Evaluation:** Assessing the model using Accuracy, Precision, and Recall metrics.
+The system demonstrates the complete AI lifecycle:
 
-## Data Preprocessing & Feature Engineering
+**Data Ingestion → EDA → Preprocessing → Safe Training → Evaluation → REST API → React Frontend.**
 
-This phase focuses on transforming raw clinical data into a high-quality format optimized for Deep Learning (TensorFlow).
-1. **Outlier Management (Clinical Trimming)**
-- Medical data often contains extreme values that can disproportionately influence model weights.
-- Technique: Interquartile Range (IQR) Capping.
-- Application: Features like chol (Cholesterol) and trestbps (Resting Blood Pressure) showed significant right-skewed outliers.
-- Action: Values exceeding the Upper Fence ($Q3 + 1.5 \times IQR$) were capped at the threshold rather than removed, preserving the dataset size ($N=1,025$) while stabilizing the variance.
-2. **Feature Correlation & Selection**
-- To reduce model complexity and prevent Multicollinearity, I performed a statistical audit of the feature set.
-- Observation: Features like cp (Chest Pain Type) and thalach (Max Heart Rate) showed the highest absolute correlation with heart disease risk.
-- Redundancy Check: Verified that no two independent variables were perfectly correlated ($r > 0.9$), ensuring the model learns unique patterns from each feature.
-3. **Data Integrity & Checkpointing**
-- Handling Nulls: Confirmed 0 missing values; no imputation required.
-- Output: The processed data is exported to data/heart_cleaned.csv to ensure a consistent baseline for both Scikit-Learn and TensorFlow experiments.
-4. **Duplicate Value Removal**
-- Exact duplicate records are detected and removed before safe training.
-- Main utility: `ml/deduplicate.py` (supports `keep-first`, `keep-random`, and `keep-most-representative` strategies).
-- Deduplicated output: `ml/data/heart_cleaned_dedup.csv`.
+The goal is not only prediction accuracy but also **clinical trust, scalability, and real-world applicability**.
 
-## Model training (Day 3)
+---
 
-This stage trains and compares 7 baseline ML models on the cleaned dataset:
-- Logistic Regression
-- Random Forest
-- SVM
-- Naive Bayes
-- Decision Tree
-- LightGBM
-- XGBoost
+## 2️⃣ Tech Stack
 
-Saved outputs:
-- Trained model artifacts: `ml/models/*.joblib`
-- Model metrics table: `ml/models/model_results.csv`
+| Layer | Technology |
+|-------|-----------|
+| **Language** | Python 3.x |
+| **Data Analysis** | Pandas, NumPy |
+| **Visualization** | Matplotlib, Seaborn |
+| **Machine Learning** | Scikit-learn, LightGBM, XGBoost |
+| **Deep Learning (Experimental)** | TensorFlow / Keras |
+| **Backend** | FastAPI (Uvicorn) |
+| **Frontend** | React 18 (Vite) |
 
-Run command:
-```bash
-python ml/run_training.py
+---
+
+## 3️⃣ Dataset Summary
+
+The system uses two complementary datasets representing different stages of healthcare.
+
+| Dataset | File | Records | Features | Source |
+|---------|------|---------|----------|--------|
+| Cleveland (Clinical) | `heart_cleaned.csv` | ~303 | 13 Clinical Indicators | UCI ML Repository |
+| Cardiovascular (Population) | `cardio_cleaned.csv` | ~68,000 | 11 Lifestyle Indicators | Kaggle |
+
+---
+
+## ⭐ Strategic Modeling Logic — The Two-Model Approach
+
+Healthcare decision making occurs at multiple stages. Instead of forcing one model to solve every problem, this system implements **two specialized AI models optimized for different clinical objectives**.
+
+---
+
+### 🩺 Model A — Clinical Diagnostic Model (Cleveland Dataset)
+
+**Goal:** Assist healthcare specialists in confirming diagnosis using advanced clinical indicators.
+
+**Dataset Characteristics:**
+- ECG results
+- Chest pain classification
+- Fluoroscopy vessel measurements
+- Stress test information
+
+These are **high-signal diagnostic features** typically available inside hospitals.
+
+#### Optimization Strategy
+
+**Priority:** High Recall + Interpretability.
+
+Missing a diseased patient is more dangerous than generating a false alert.
+
+**Selected Model:** Logistic Regression Pipeline.
+
+**Why Logistic Regression?**
+- Highly interpretable feature weights
+- Transparent probability outputs
+- Clinically explainable decisions
+- Stable generalization on small datasets
+
+**Performance:**
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 80.3% |
+| ROC-AUC | 0.871 |
+| Recall | 0.849 |
+
+**Clinical Role:** Doctor-assisted diagnostic confirmation.
+
+---
+
+### ❤️ Model B — Population Screening Model (Cardiovascular Dataset)
+
+**Goal:** Identify heart disease risk patterns across the general population using non-invasive indicators.
+
+**Dataset Characteristics:**
+- Height, Weight
+- Blood Pressure
+- Smoking habits
+- Alcohol intake
+- Physical activity
+
+These signals reflect lifestyle risk rather than confirmed diagnosis.
+
+#### Optimization Strategy
+
+**Priority:** ROC-AUC + Scalability + Stability.
+
+Population screening must handle noisy, diverse real-world data.
+
+**Selected Model:** LightGBM Gradient Boosting Pipeline.
+
+**Why LightGBM?**
+- Efficient training on large datasets
+- Captures non-linear feature interactions
+- Handles large tabular datasets effectively
+- Strong performance stability
+
+**Performance:**
+
+| Metric | Value |
+|--------|-------|
+| Accuracy | 73.4% |
+| ROC-AUC | 0.799 |
+
+**Population Role:** Early risk screening and preventive healthcare monitoring.
+
+---
+
+## 4️⃣ Machine Learning Pipeline (`ml/`)
+
+The project follows a structured workflow to ensure reliability.
+
+---
+
+### Data Preparation
+
+**Outlier Management:**
+
+Clinical features such as cholesterol (`chol`) and resting blood pressure (`trestbps`) are stabilized using Interquartile Range (IQR) Capping.
+
+Values exceeding $Q3 + 1.5 \times IQR$ are capped rather than removed. Dataset size preserved: $N = 1{,}025$.
+
+---
+
+### Duplicate Removal
+
+Duplicate patient records inflate model performance.
+
+**Utility:** `ml/deduplicate.py`
+
+**Strategies:** `keep-first`, `keep-random`, `keep-most-representative`.
+
+**Output:** `ml/data/heart_cleaned_dedup.csv`
+
+---
+
+### Safe Splitting
+
+**Script:** `ml/safe_split.py`
+
+**Features:**
+- Stratified 80/20 split
+- Zero overlap verification
+- Leakage prevention
+
+**Outputs:** `train.csv`, `test.csv`
+
+---
+
+## 5️⃣ The Evolutionary Workflow — Approach 1 → N
+
+---
+
+### Approach 1 — Clinical Baseline
+
+| | |
+|---|---|
+| **Dataset** | Cleveland (~303 patients) |
+| **Model** | Logistic Regression |
+| **Goal** | Understand feature influence |
+| **Accuracy** | 80.3% |
+| **ROC-AUC** | 0.871 |
+
+**Gap Identified:** Small dataset risked overfitting.
+
+---
+
+### Approach 2 — Safe Training Pipeline
+
+**Goal:** Remove optimistic bias.
+
+**Methods:**
+- Deduplication
+- Leakage detection
+- Cross-Validation
+
+**Scripts:** `leakage_scan.py`, `verify_overfitting.py`, `safe_split.py`
+
+**Outcome:** Reliable performance estimates.
+
+---
+
+### Approach 3 — Scaling to Big Data
+
+| | |
+|---|---|
+| **Dataset** | Cardiovascular (~68K patients) |
+| **Focus Shift** | Diagnosis → Population Screening |
+
+**Feature Engineering:**
+- Age converted days → years
+- Outlier stabilization
+
+---
+
+### Approach N — Gradient Boosting Optimization
+
+| | |
+|---|---|
+| **Model** | LightGBM |
+| **ROC-AUC** | 0.799 |
+
+**Reason:** Traditional linear models reached performance limits.
+
+LightGBM captured:
+- Non-linear interactions
+- Complex lifestyle relationships
+
+Most stable performance across folds.
+
+---
+
+## 6️⃣ Model Training Summary
+
+### Accuracy Comparison — Clinical vs Population Models
+
+![Accuracy Comparison](ml/models/accuracy_dataset_comparison.png)
+
+### Cleveland Dataset (Diagnostic Focus)
+
+| Model | Accuracy | ROC-AUC |
+|-------|----------|---------|
+| Logistic Regression | 0.803 | 0.871 |
+| Naive Bayes | 0.787 | 0.887 |
+| Random Forest | 0.754 | 0.866 |
+
+### Cardiovascular Dataset (Population Focus)
+
+| Model | Accuracy | ROC-AUC |
+|-------|----------|---------|
+| LightGBM | 0.734 | 0.799 |
+| Logistic Regression | 0.727 | 0.791 |
+| XGBoost | 0.725 | 0.787 |
+
+---
+
+## 7️⃣ Backend Integration
+
+**Model Loaders:**
+- `backend/app/ml/load_model.py`
+- `ml/load_cardio_model.py`
+
+Singleton loading ensures models load once at startup.
+
+**Endpoints:**
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/models/` | List all models with ROC-AUC scores |
+| GET | `/api/models/best` | Best model metadata |
+| POST | `/api/predict/` | Cleveland heart disease prediction |
+| POST | `/api/predict/cardio/` | Cardiovascular disease prediction |
+
+---
+
+## 8️⃣ Frontend
+
+React 18 + Vite interface with two user-friendly prediction modes:
+
+- **Clinical Heart Check** — Detailed assessment using medical test indicators
+- **Lifestyle Risk Screening** — Quick screening based on lifestyle and health factors
+
+**Features:**
+- Card-based model selection with tooltips
+- Inline form validation
+- Risk result cards with probability display
+
+---
+
+## 9️⃣ Setup
+
+Run the entire system:
+
+```powershell
+.\START_SYSTEM.ps1
 ```
 
-Note: `compare_models.py` selects the top model and saves it to `ml/models/best_model.joblib`.
+| Service | Port |
+|---------|------|
+| Backend | 8000 |
+| Frontend | 5173 |
 
-## Safe Training Pipeline
+---
 
-To reduce leakage/overfitting risk, the project also includes a safe data + training flow:
+## 🔟 Submission Compliance
 
-1. Deduplicate:
-```bash
-python ml/deduplicate.py --strategy keep-first
+This repository follows submission rules:
+
+- Public GitHub repository
+- Clear README documentation
+- Frequent logical commits
+- Descriptive commit messages explaining WHAT and WHY
+- `.gitignore` excludes logs, builds, and artifacts
+
+Example commit:
+
+```
+feat: implement safe data split to prevent train-test leakage
 ```
 
-2. Stratified split:
-```bash
-python ml/safe_split.py
-```
+---
 
-3. Train with CV on train split:
-```bash
-python ml/train_models_safe.py
-```
+## 👨‍💻 Author
 
-4. Select best safe model:
-```bash
-python ml/compare_models.py
-```
-
-Safe outputs:
-- CV results: `ml/models/model_results_safe.csv`
-- Saved safe models: `ml/models/*_safe.joblib`
-- Selected best model: `ml/models/best_model.joblib`
-- Best-model metadata: `ml/models/best_model_info.json`
-
-## Data Quality & Leakage Utilities
-
-- Duplicate inspection: `python ml/check_duplicates.py [--drop]`
-- Leakage scan per feature: `python ml/leakage_scan.py`
-- Overfitting verification: `python ml/verify_overfitting.py --data ml/data/heart_cleaned.csv`
-
-## Backend Integration
-
-- Model loader: `backend/app/ml/load_model.py`
-- API routes: `backend/app/api/models_api.py`
-  - `GET /api/models/`
-  - `GET /api/models/best`
+**AI-Based Heart Disease Prediction System** — Full Stack AI Healthcare Project.

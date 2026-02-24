@@ -216,7 +216,6 @@ ml/*_output.txt
 ml/data/duplicates_removed.csv
 ml/data/heart_cleaned_unique.csv
 ml/models/leakage_scan.csv
-ml/models/*_comparison.png
 
 # ML pipeline — large data files (download separately)
 ml/data/external/
