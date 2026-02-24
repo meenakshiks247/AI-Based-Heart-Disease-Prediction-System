@@ -1,50 +1,68 @@
 import React, { useState } from 'react'
 
-/* ─── default form values ─── */
-const INITIAL_FORM = {
-    age: 54,
-    sex: 1,
-    cp: 0,
-    trestbps: 130,
-    chol: 250,
-    fbs: 0,
-    restecg: 0,
-    thalach: 150,
-    exang: 0,
-    oldpeak: 1.0,
-    slope: 1,
-    ca: 0,
-    thal: 2,
-}
-
-/* ─── human‑readable labels ─── */
-const LABELS = {
-    age: 'Age',
-    sex: 'Sex (1 = Male, 0 = Female)',
-    cp: 'Chest Pain Type (0–3)',
-    trestbps: 'Resting Blood Pressure',
-    chol: 'Cholesterol (mg/dl)',
-    fbs: 'Fasting Blood Sugar > 120 (1/0)',
-    restecg: 'Resting ECG (0–2)',
-    thalach: 'Max Heart Rate',
-    exang: 'Exercise‑Induced Angina (1/0)',
-    oldpeak: 'ST Depression (Oldpeak)',
-    slope: 'Slope of Peak ST (0–2)',
-    ca: 'Major Vessels Colored (0–4)',
-    thal: 'Thalassemia (0–3)',
+/* ─── model definitions ─── */
+const MODELS = {
+    clinical: {
+        label: 'Clinical (Cleveland) Model',
+        endpoint: 'http://127.0.0.1:8000/api/predict/',
+        note: null,
+        defaults: {
+            age: 54, sex: 1, cp: 0, trestbps: 130, chol: 250, fbs: 0,
+            restecg: 0, thalach: 150, exang: 0, oldpeak: 1.0, slope: 1, ca: 0, thal: 2,
+        },
+        labels: {
+            age: 'Age', sex: 'Sex (1 = Male, 0 = Female)', cp: 'Chest Pain Type (0–3)',
+            trestbps: 'Resting Blood Pressure', chol: 'Cholesterol (mg/dl)',
+            fbs: 'Fasting Blood Sugar > 120 (1/0)', restecg: 'Resting ECG (0–2)',
+            thalach: 'Max Heart Rate', exang: 'Exercise‑Induced Angina (1/0)',
+            oldpeak: 'ST Depression (Oldpeak)', slope: 'Slope of Peak ST (0–2)',
+            ca: 'Major Vessels Colored (0–4)', thal: 'Thalassemia (0–3)',
+        },
+        floatFields: ['oldpeak'],
+    },
+    cardio: {
+        label: 'Population (Cardio) Model',
+        endpoint: 'http://127.0.0.1:8000/api/predict/cardio/',
+        note: 'Population model trained on 68k samples — uses a different feature set.',
+        defaults: {
+            age: 50, sex: 2, height: 168, weight: 62, systolic_bp: 120,
+            diastolic_bp: 80, cholesterol: 1, gluc: 1, smoke: 0, alco: 0, active: 1,
+        },
+        labels: {
+            age: 'Age (years)', sex: 'Sex (1 = Female, 2 = Male)',
+            height: 'Height (cm)', weight: 'Weight (kg)',
+            systolic_bp: 'Systolic BP (ap_hi)', diastolic_bp: 'Diastolic BP (ap_lo)',
+            cholesterol: 'Cholesterol (1–3)', gluc: 'Glucose (1–3)',
+            smoke: 'Smoking (0/1)', alco: 'Alcohol (0/1)', active: 'Active (0/1)',
+        },
+        floatFields: ['age', 'weight'],
+    },
 }
 
 export default function App() {
-    const [formData, setFormData] = useState(INITIAL_FORM)
+    const [modelKey, setModelKey] = useState('clinical')
+    const model = MODELS[modelKey]
+
+    const [formData, setFormData] = useState({ ...model.defaults })
     const [result, setResult] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [fieldErrors, setFieldErrors] = useState({})
 
-    /* safely parse a numeric value — returns the default if input is empty or NaN */
+    /* switch model — reset form, result, errors */
+    const handleModelChange = (e) => {
+        const key = e.target.value
+        setModelKey(key)
+        setFormData({ ...MODELS[key].defaults })
+        setResult(null)
+        setError(null)
+        setFieldErrors({})
+    }
+
+    /* safely parse a numeric value */
     const safeParse = (name, raw) => {
         if (raw === '' || raw === '-') return ''
-        const parsed = name === 'oldpeak' ? parseFloat(raw) : parseInt(raw, 10)
+        const parsed = model.floatFields.includes(name) ? parseFloat(raw) : parseInt(raw, 10)
         return Number.isNaN(parsed) ? '' : parsed
     }
 
@@ -62,9 +80,9 @@ export default function App() {
     /* validate all fields before submit */
     const validate = () => {
         const errors = {}
-        for (const key of Object.keys(INITIAL_FORM)) {
+        for (const key of Object.keys(model.defaults)) {
             if (formData[key] === '' || formData[key] === null || formData[key] === undefined || Number.isNaN(formData[key])) {
-                errors[key] = `${LABELS[key]} is required`
+                errors[key] = `${model.labels[key]} is required`
             }
         }
         setFieldErrors(errors)
@@ -80,7 +98,7 @@ export default function App() {
         setError(null)
 
         try {
-            const response = await fetch('http://127.0.0.1:8000/api/predict/', {
+            const response = await fetch(model.endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
@@ -110,15 +128,31 @@ export default function App() {
             </header>
 
             <form className="form" onSubmit={handleSubmit}>
+                {/* ─── model selector ─── */}
+                <div className="field model-selector">
+                    <label htmlFor="model-select">Model</label>
+                    <select
+                        id="model-select"
+                        value={modelKey}
+                        onChange={handleModelChange}
+                    >
+                        {Object.entries(MODELS).map(([key, m]) => (
+                            <option key={key} value={key}>{m.label}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {model.note && <p className="model-note">{model.note}</p>}
+
                 <div className="grid">
-                    {Object.keys(INITIAL_FORM).map((key) => (
+                    {Object.keys(model.defaults).map((key) => (
                         <div className={`field ${fieldErrors[key] ? 'field--error' : ''}`} key={key}>
-                            <label htmlFor={key}>{LABELS[key]}</label>
+                            <label htmlFor={key}>{model.labels[key]}</label>
                             <input
                                 id={key}
                                 name={key}
                                 type="number"
-                                step={key === 'oldpeak' ? '0.1' : '1'}
+                                step={model.floatFields.includes(key) ? '0.1' : '1'}
                                 value={formData[key]}
                                 onChange={handleChange}
                                 required
@@ -237,6 +271,50 @@ export default function App() {
         .field input:focus {
           border-color: #7f5af0;
           box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.25);
+        }
+
+        /* ─── model selector ─── */
+        .model-selector {
+          margin-bottom: 20px;
+        }
+
+        .model-selector select {
+          width: 100%;
+          padding: 10px 12px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.08);
+          color: #f0f0f0;
+          font-size: 1rem;
+          outline: none;
+          cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          appearance: none;
+          -webkit-appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+        }
+
+        .model-selector select:focus {
+          border-color: #7f5af0;
+          box-shadow: 0 0 0 3px rgba(127, 90, 240, 0.25);
+        }
+
+        .model-selector select option {
+          background: #24243e;
+          color: #f0f0f0;
+        }
+
+        .model-note {
+          margin-bottom: 18px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          background: rgba(127, 90, 240, 0.1);
+          border: 1px solid rgba(127, 90, 240, 0.25);
+          color: #b0aec1;
+          font-size: 0.85rem;
+          text-align: center;
         }
 
         /* ─── inline validation errors ─── */
