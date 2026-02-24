@@ -297,24 +297,4 @@ Run the entire system:
 
 ---
 
-## 🔟 Submission Compliance
 
-This repository follows submission rules:
-
-- Public GitHub repository
-- Clear README documentation
-- Frequent logical commits
-- Descriptive commit messages explaining WHAT and WHY
-- `.gitignore` excludes logs, builds, and artifacts
-
-Example commit:
-
-```
-feat: implement safe data split to prevent train-test leakage
-```
-
----
-
-## 👨‍💻 Author
-
-**AI-Based Heart Disease Prediction System** — Full Stack AI Healthcare Project.
