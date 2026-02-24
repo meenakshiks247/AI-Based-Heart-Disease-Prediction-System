@@ -73,9 +73,19 @@ def predict(data: HeartInput) -> dict:
         prob = float(_bundle.model.predict_proba(X)[0][0])
         prediction = int(prob >= 0.5)
 
+        probability = round(prob, 6)
+
+        if probability < 0.40:
+            risk_level = "Low Risk"
+        elif probability < 0.70:
+            risk_level = "Moderate Risk"
+        else:
+            risk_level = "High Risk"
+
         return {
             "prediction": prediction,
-            "probability": round(prob, 6),
+            "probability": probability,
+            "risk_level": risk_level,
             "model_name": _bundle.model_name,
         }
 
