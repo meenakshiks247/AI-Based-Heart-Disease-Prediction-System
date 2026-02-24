@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-INPUT_PATH = Path("ml/data/heart_cleaned_dedup.csv")
+INPUT_PATH = Path("ml/data/heart_cleaned_unique.csv")
 TRAIN_PATH = Path("ml/data/train.csv")
 TEST_PATH = Path("ml/data/test.csv")
 TARGET_COL = "target"
@@ -46,6 +46,9 @@ def main() -> int:
         print(f"[ERROR] Target column '{TARGET_COL}' not found in {INPUT_PATH}")
         return 2
 
+    print(f"[INFO] Loaded {len(df)} unique rows from {INPUT_PATH}")
+
+    # ── Stratified 80/20 split ───────────────────────────────────────
     train_df, test_df = train_test_split(
         df,
         test_size=TEST_SIZE,
@@ -53,36 +56,40 @@ def main() -> int:
         stratify=df[TARGET_COL],
     )
 
-    # Save outputs
+    # ── Verify zero overlap ──────────────────────────────────────────
+    overlap = pd.merge(train_df, test_df, how="inner")
+    assert len(overlap) == 0, f"LEAKAGE: {len(overlap)} overlapping rows!"
+    print("[INFO] Zero overlap between train and test verified.")
+
+    # ── Save ─────────────────────────────────────────────────────────
     TRAIN_PATH.parent.mkdir(parents=True, exist_ok=True)
     train_df.to_csv(TRAIN_PATH, index=False)
     test_df.to_csv(TEST_PATH, index=False)
 
-    # Print distributions
+    print(f"\n[INFO] Train size : {len(train_df)} -> {TRAIN_PATH}")
+    print(f"[INFO] Test size  : {len(test_df)} -> {TEST_PATH}")
+
+    # ── Class distributions ──────────────────────────────────────────
     overall_dist = class_distribution(df, TARGET_COL)
     train_dist = class_distribution(train_df, TARGET_COL)
     test_dist = class_distribution(test_df, TARGET_COL)
-
-    print(f"[INFO] Loaded rows: {len(df)}")
-    print(f"[INFO] Saved train rows: {len(train_df)} -> {TRAIN_PATH}")
-    print(f"[INFO] Saved test rows:  {len(test_df)} -> {TEST_PATH}")
 
     print_distribution("Overall class distribution", overall_dist)
     print_distribution("Train class distribution", train_dist)
     print_distribution("Test class distribution", test_dist)
 
-    # Warn if class balance drifts by more than 3%
+    # Warn if class balance drifts > 3%
     train_shift = max_distribution_shift(overall_dist, train_dist)
     test_shift = max_distribution_shift(overall_dist, test_dist)
     if train_shift > MAX_ALLOWED_DIFF or test_shift > MAX_ALLOWED_DIFF:
         print(
             f"\n[WARN] Class distribution shift > 3% detected "
-            f"(train max shift={train_shift:.4f}, test max shift={test_shift:.4f})."
+            f"(train={train_shift:.4f}, test={test_shift:.4f})."
         )
     else:
         print(
             f"\n[INFO] Class balance maintained within 3% "
-            f"(train max shift={train_shift:.4f}, test max shift={test_shift:.4f})."
+            f"(train={train_shift:.4f}, test={test_shift:.4f})."
         )
 
     return 0

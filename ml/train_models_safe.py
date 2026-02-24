@@ -12,6 +12,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import Pipeline
@@ -87,13 +88,34 @@ def make_pipeline(preprocessor: ColumnTransformer, model: Any) -> Pipeline:
     )
 
 
+def holdout_roc_auc(pipeline: Pipeline, X_test: pd.DataFrame, y_test: pd.Series) -> float:
+    """Compute ROC AUC on holdout, handling models without predict_proba."""
+    estimator = pipeline.named_steps["model"]
+    if hasattr(estimator, "predict_proba"):
+        y_scores = pipeline.predict_proba(X_test)
+        return roc_auc_score(y_test, y_scores[:, 1] if y_scores.ndim == 2 else y_scores)
+    if hasattr(estimator, "decision_function"):
+        return roc_auc_score(y_test, pipeline.decision_function(X_test))
+    return float("nan")
+
+
 def main() -> None:
     base_dir = Path(__file__).resolve().parent
     train_path = base_dir / "data" / "train.csv"
+    test_path = base_dir / "data" / "test.csv"
     model_dir = base_dir / "models"
     model_dir.mkdir(parents=True, exist_ok=True)
 
     X_train, y_train = load_data(train_path)
+
+    # Load holdout test set
+    if not test_path.exists():
+        raise FileNotFoundError(f"Test file not found: {test_path}")
+    test_df = pd.read_csv(test_path)
+    X_test = test_df.drop(columns=[TARGET_COL])
+    y_test = test_df[TARGET_COL]
+    print(f"[INFO] Train: {len(X_train)} rows, Test: {len(X_test)} rows")
+
     preprocessor = build_preprocessor(X_train)
     models = build_models()
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=SEED)
@@ -106,7 +128,10 @@ def main() -> None:
         "roc_auc": "roc_auc",
     }
 
-    results: list[dict[str, float | str]] = []
+    cv_results: list[dict[str, float | str]] = []
+    holdout_results: list[dict[str, float | str]] = []
+    pipelines: dict[str, Pipeline] = {}
+
     for model_name, model in models.items():
         print(f"\n[INFO] Training + CV for: {model_name}")
         pipeline = make_pipeline(preprocessor, model)
@@ -123,18 +148,17 @@ def main() -> None:
         )
         cv_time = perf_counter() - start
 
-        # Fit full training split and persist model for inference.
+        # Fit on full training set and persist
         pipeline.fit(X_train, y_train)
         model_path = model_dir / f"{model_name}_safe.joblib"
         joblib.dump(pipeline, model_path)
+        pipelines[model_name] = pipeline
 
         mean_auc = float(np.mean(cv_scores["test_roc_auc"]))
         std_auc = float(np.std(cv_scores["test_roc_auc"]))
-        print(f"[INFO] {model_name} mean ROC AUC: {mean_auc:.6f}")
-        print(f"[INFO] {model_name} std ROC AUC:  {std_auc:.6f}")
-        print(f"[INFO] Saved model: {model_path}")
+        print(f"[INFO] {model_name} CV ROC AUC: {mean_auc:.4f} (+/- {std_auc:.4f})")
 
-        results.append(
+        cv_results.append(
             {
                 "model_name": model_name,
                 "accuracy": float(np.mean(cv_scores["test_accuracy"])),
@@ -147,12 +171,37 @@ def main() -> None:
             }
         )
 
-    results_df = pd.DataFrame(results).sort_values(by="roc_auc", ascending=False).reset_index(drop=True)
-    out_csv = model_dir / "model_results_safe.csv"
-    results_df.to_csv(out_csv, index=False)
-    print(f"\n[INFO] Saved CV results: {out_csv}")
-    print("\n[INFO] CV leaderboard by ROC AUC:")
-    print(results_df.to_string(index=False))
+        # ── Holdout evaluation ───────────────────────────────────────
+        y_pred = pipeline.predict(X_test)
+        h_roc = holdout_roc_auc(pipeline, X_test, y_test)
+        print(f"[INFO] {model_name} HOLDOUT ROC AUC: {h_roc:.4f}")
+
+        holdout_results.append(
+            {
+                "model_name": model_name,
+                "holdout_accuracy": accuracy_score(y_test, y_pred),
+                "holdout_precision": precision_score(y_test, y_pred, zero_division=0),
+                "holdout_recall": recall_score(y_test, y_pred, zero_division=0),
+                "holdout_f1": f1_score(y_test, y_pred, zero_division=0),
+                "holdout_roc_auc": h_roc,
+            }
+        )
+
+    # ── Save CV results ──────────────────────────────────────────────
+    cv_df = pd.DataFrame(cv_results).sort_values(by="roc_auc", ascending=False).reset_index(drop=True)
+    cv_csv = model_dir / "model_results_safe.csv"
+    cv_df.to_csv(cv_csv, index=False)
+    print(f"\n[INFO] Saved CV results: {cv_csv}")
+    print("\n[INFO] === CV Leaderboard (ROC AUC) ===")
+    print(cv_df.to_string(index=False))
+
+    # ── Save holdout results ─────────────────────────────────────────
+    ho_df = pd.DataFrame(holdout_results).sort_values(by="holdout_roc_auc", ascending=False).reset_index(drop=True)
+    ho_csv = model_dir / "model_results_holdout.csv"
+    ho_df.to_csv(ho_csv, index=False)
+    print(f"\n[INFO] Saved holdout results: {ho_csv}")
+    print("\n[INFO] === Holdout Leaderboard (ROC AUC) ===")
+    print(ho_df.to_string(index=False))
 
 
 if __name__ == "__main__":

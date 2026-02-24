@@ -1,11 +1,13 @@
 {
   "model_name": "logistic_regression",
-  "source": "safe",
-  "roc_auc": 0.9149184149184147,
-  "f1": 0.8607171305284511,
-  "accuracy": 0.8379251700680272,
-  "precision": 0.823922273922274,
-  "recall": 0.9082621082621084,
-  "roc_auc_std": 0.0370053502863508,
-  "cv_time_seconds": 5.185330999986036
+  "selection_criterion": "recall",
+  "holdout_recall": 0.8485,
+  "holdout_accuracy": 0.8033,
+  "holdout_precision": 0.8,
+  "holdout_f1": 0.8235,
+  "holdout_roc_auc": 0.8712,
+  "cv_roc_auc": 0.9149,
+  "cv_accuracy": 0.8379,
+  "training_rows": 241,
+  "test_rows": 61
 }
