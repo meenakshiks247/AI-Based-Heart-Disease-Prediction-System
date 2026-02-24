@@ -1,0 +1,11 @@
+{
+  "model_name": "lightgbm",
+  "source": "cardio",
+  "roc_auc": 0.799007,
+  "accuracy": 0.733606,
+  "precision": 0.752116,
+  "recall": 0.692588,
+  "f1": 0.721109,
+  "cv_roc_auc": null,
+  "saved_from": "cardio_lgbm.joblib"
+}
