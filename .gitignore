@@ -210,3 +210,17 @@ __marimo__/
 node_modules/
 package-lock.json
 dist/
+
+# ML pipeline — generated / intermediate outputs
+ml/*_output.txt
+ml/data/duplicates_removed.csv
+ml/data/heart_cleaned_unique.csv
+ml/models/leakage_scan.csv
+ml/models/*_comparison.png
+
+# ML pipeline — large data files (download separately)
+ml/data/external/
+ml/data/cardio_cleaned.csv
+
+# ML pipeline — oversized model artifacts (regenerate with train_cardio_models.py)
+ml/models/cardio_rf.joblib
