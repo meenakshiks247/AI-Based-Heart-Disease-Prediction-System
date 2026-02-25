@@ -1,0 +1,305 @@
+{
+  "model_name": "logistic_regression",
+  "rows": [
+    {
+      "index": 0,
+      "top_features": [
+        {
+          "feature": "sex",
+          "shap": 1.352632,
+          "effect": "increase"
+        },
+        {
+          "feature": "cp",
+          "shap": 0.926212,
+          "effect": "increase"
+        },
+        {
+          "feature": "chol",
+          "shap": -0.878525,
+          "effect": "decrease"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        },
+        {
+          "feature": "thal",
+          "shap": -0.574796,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "top_features": [
+        {
+          "feature": "cp",
+          "shap": -0.964017,
+          "effect": "decrease"
+        },
+        {
+          "feature": "thalach",
+          "shap": -0.879944,
+          "effect": "decrease"
+        },
+        {
+          "feature": "exang",
+          "shap": -0.798067,
+          "effect": "decrease"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        },
+        {
+          "feature": "thal",
+          "shap": -0.574796,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "top_features": [
+        {
+          "feature": "ca",
+          "shap": -1.502476,
+          "effect": "decrease"
+        },
+        {
+          "feature": "cp",
+          "shap": -0.964017,
+          "effect": "decrease"
+        },
+        {
+          "feature": "exang",
+          "shap": -0.798067,
+          "effect": "decrease"
+        },
+        {
+          "feature": "thalach",
+          "shap": -0.698512,
+          "effect": "decrease"
+        },
+        {
+          "feature": "thal",
+          "shap": -0.574796,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "top_features": [
+        {
+          "feature": "ca",
+          "shap": -1.502476,
+          "effect": "decrease"
+        },
+        {
+          "feature": "cp",
+          "shap": 0.926212,
+          "effect": "increase"
+        },
+        {
+          "feature": "thal",
+          "shap": -0.574796,
+          "effect": "decrease"
+        },
+        {
+          "feature": "sex",
+          "shap": -0.526024,
+          "effect": "decrease"
+        },
+        {
+          "feature": "oldpeak",
+          "shap": -0.350658,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "top_features": [
+        {
+          "feature": "sex",
+          "shap": 1.352632,
+          "effect": "increase"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        },
+        {
+          "feature": "chol",
+          "shap": 0.599341,
+          "effect": "increase"
+        },
+        {
+          "feature": "thalach",
+          "shap": -0.444508,
+          "effect": "decrease"
+        },
+        {
+          "feature": "trestbps",
+          "shap": 0.402222,
+          "effect": "increase"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "top_features": [
+        {
+          "feature": "cp",
+          "shap": 0.926212,
+          "effect": "increase"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        },
+        {
+          "feature": "sex",
+          "shap": -0.526024,
+          "effect": "decrease"
+        },
+        {
+          "feature": "oldpeak",
+          "shap": 0.352063,
+          "effect": "increase"
+        },
+        {
+          "feature": "exang",
+          "shap": 0.295175,
+          "effect": "increase"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "top_features": [
+        {
+          "feature": "thal",
+          "shap": 1.141013,
+          "effect": "increase"
+        },
+        {
+          "feature": "thalach",
+          "shap": -0.662226,
+          "effect": "decrease"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        },
+        {
+          "feature": "sex",
+          "shap": -0.526024,
+          "effect": "decrease"
+        },
+        {
+          "feature": "oldpeak",
+          "shap": 0.352063,
+          "effect": "increase"
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "top_features": [
+        {
+          "feature": "sex",
+          "shap": 1.352632,
+          "effect": "increase"
+        },
+        {
+          "feature": "cp",
+          "shap": 0.926212,
+          "effect": "increase"
+        },
+        {
+          "feature": "thalach",
+          "shap": -0.625939,
+          "effect": "decrease"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        },
+        {
+          "feature": "thal",
+          "shap": -0.574796,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "top_features": [
+        {
+          "feature": "thal",
+          "shap": 1.141013,
+          "effect": "increase"
+        },
+        {
+          "feature": "cp",
+          "shap": -0.964017,
+          "effect": "decrease"
+        },
+        {
+          "feature": "thalach",
+          "shap": -0.91623,
+          "effect": "decrease"
+        },
+        {
+          "feature": "exang",
+          "shap": -0.798067,
+          "effect": "decrease"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "top_features": [
+        {
+          "feature": "sex",
+          "shap": 1.352632,
+          "effect": "increase"
+        },
+        {
+          "feature": "cp",
+          "shap": -0.964017,
+          "effect": "decrease"
+        },
+        {
+          "feature": "thalach",
+          "shap": -0.91623,
+          "effect": "decrease"
+        },
+        {
+          "feature": "chol",
+          "shap": 0.676387,
+          "effect": "increase"
+        },
+        {
+          "feature": "ca",
+          "shap": 0.613687,
+          "effect": "increase"
+        }
+      ]
+    }
+  ]
+}

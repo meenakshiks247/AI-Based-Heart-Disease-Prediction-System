@@ -43,6 +43,80 @@ class HeartInput(BaseModel):
     thal: float
 
 
+# ── Health-factor helpers ────────────────────────────────────────────
+
+
+def _clinical_factors(
+    raw: dict, risk_level: str,
+) -> tuple[list[str], list[str]]:
+    """Return (positive_factors, risk_factors) for the clinical model."""
+    positives: list[str] = []
+    risks: list[str] = []
+
+    # Blood pressure
+    bp = raw.get("trestbps", 999)
+    if bp < 120:
+        positives.append("Healthy Blood Pressure")
+    elif bp >= 140:
+        risks.append("Elevated Blood Pressure")
+
+    # Cholesterol
+    chol = raw.get("chol", 999)
+    if chol < 200:
+        positives.append("Good Cholesterol")
+    elif chol >= 240:
+        risks.append("High Cholesterol")
+
+    # Age
+    age = raw.get("age", 999)
+    if age < 50:
+        positives.append("Healthy Age Range")
+    elif age >= 60:
+        risks.append("Age-Related Risk")
+
+    # Max heart rate (higher is generally better)
+    thalach = raw.get("thalach", 0)
+    if thalach >= 150:
+        positives.append("Good Cardiovascular Fitness")
+    elif thalach < 120:
+        risks.append("Low Peak Heart Rate")
+
+    # Fasting blood sugar
+    if raw.get("fbs", 0) == 0:
+        positives.append("Normal Blood Sugar")
+    else:
+        risks.append("Elevated Blood Sugar")
+
+    # Exercise-induced angina
+    if raw.get("exang", 0) == 0:
+        positives.append("No Exercise Angina")
+    else:
+        risks.append("Exercise-Induced Angina")
+
+    return positives, risks
+
+
+def _recommendations(risk_level: str) -> list[str]:
+    if risk_level == "Low Risk":
+        return [
+            "Continue daily walking.",
+            "Maintain a healthy diet.",
+            "Regular health check every year.",
+        ]
+    if risk_level == "Moderate Risk":
+        return [
+            "Increase physical activity.",
+            "Monitor blood pressure monthly.",
+            "Reduce salt and sugar intake.",
+        ]
+    # High Risk
+    return [
+        "Consult a healthcare professional.",
+        "Schedule cardiovascular screening.",
+        "Adopt immediate lifestyle modifications.",
+    ]
+
+
 # ── Prediction endpoint ─────────────────────────────────────────────
 
 
@@ -82,10 +156,18 @@ def predict(data: HeartInput) -> dict:
         else:
             risk_level = "High Risk"
 
+        # ── health factors & recommendations ─────────────────────
+        raw = data.model_dump()
+        positive_factors, risk_factors = _clinical_factors(raw, risk_level)
+        recommendations = _recommendations(risk_level)
+
         return {
             "prediction": prediction,
             "probability": probability,
             "risk_level": risk_level,
+            "positive_factors": positive_factors,
+            "risk_factors": risk_factors,
+            "recommendations": recommendations,
             "model_name": _bundle.model_name,
         }
 

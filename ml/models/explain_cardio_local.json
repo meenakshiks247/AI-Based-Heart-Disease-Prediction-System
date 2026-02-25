@@ -1,0 +1,305 @@
+{
+  "model_name": "lightgbm",
+  "rows": [
+    {
+      "index": 46064,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": -0.736233,
+          "effect": "decrease"
+        },
+        {
+          "feature": "weight",
+          "shap": 0.410624,
+          "effect": "increase"
+        },
+        {
+          "feature": "age",
+          "shap": -0.162303,
+          "effect": "decrease"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": 0.14737,
+          "effect": "increase"
+        },
+        {
+          "feature": "active",
+          "shap": 0.146041,
+          "effect": "increase"
+        }
+      ]
+    },
+    {
+      "index": 42993,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": 1.181064,
+          "effect": "increase"
+        },
+        {
+          "feature": "age",
+          "shap": 0.498987,
+          "effect": "increase"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": 0.11882,
+          "effect": "increase"
+        },
+        {
+          "feature": "weight",
+          "shap": 0.107971,
+          "effect": "increase"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": -0.104375,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 54173,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": 1.653395,
+          "effect": "increase"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": 0.14485,
+          "effect": "increase"
+        },
+        {
+          "feature": "age",
+          "shap": 0.085151,
+          "effect": "increase"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": 0.053128,
+          "effect": "increase"
+        },
+        {
+          "feature": "active",
+          "shap": -0.027121,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 22051,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": -0.571014,
+          "effect": "decrease"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": -0.239949,
+          "effect": "decrease"
+        },
+        {
+          "feature": "age",
+          "shap": 0.112903,
+          "effect": "increase"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": -0.079322,
+          "effect": "decrease"
+        },
+        {
+          "feature": "active",
+          "shap": -0.050139,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 15894,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": -0.565668,
+          "effect": "decrease"
+        },
+        {
+          "feature": "age",
+          "shap": -0.152092,
+          "effect": "decrease"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": -0.135499,
+          "effect": "decrease"
+        },
+        {
+          "feature": "gluc",
+          "shap": -0.056258,
+          "effect": "decrease"
+        },
+        {
+          "feature": "active",
+          "shap": -0.053035,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 29857,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": -0.962391,
+          "effect": "decrease"
+        },
+        {
+          "feature": "height",
+          "shap": 0.27839,
+          "effect": "increase"
+        },
+        {
+          "feature": "gluc",
+          "shap": 0.179237,
+          "effect": "increase"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": 0.175401,
+          "effect": "increase"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": -0.147998,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 65541,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": 1.24107,
+          "effect": "increase"
+        },
+        {
+          "feature": "age",
+          "shap": 0.277962,
+          "effect": "increase"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": 0.159072,
+          "effect": "increase"
+        },
+        {
+          "feature": "weight",
+          "shap": 0.124862,
+          "effect": "increase"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": -0.086978,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 9281,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": 1.672363,
+          "effect": "increase"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": 0.187122,
+          "effect": "increase"
+        },
+        {
+          "feature": "age",
+          "shap": 0.100065,
+          "effect": "increase"
+        },
+        {
+          "feature": "weight",
+          "shap": 0.090445,
+          "effect": "increase"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": -0.089862,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 27514,
+      "top_features": [
+        {
+          "feature": "age",
+          "shap": -1.026496,
+          "effect": "decrease"
+        },
+        {
+          "feature": "systolic_bp",
+          "shap": -0.732321,
+          "effect": "decrease"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": -0.222955,
+          "effect": "decrease"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": -0.079758,
+          "effect": "decrease"
+        },
+        {
+          "feature": "active",
+          "shap": -0.030011,
+          "effect": "decrease"
+        }
+      ]
+    },
+    {
+      "index": 59032,
+      "top_features": [
+        {
+          "feature": "systolic_bp",
+          "shap": 1.583477,
+          "effect": "increase"
+        },
+        {
+          "feature": "weight",
+          "shap": 0.26108,
+          "effect": "increase"
+        },
+        {
+          "feature": "age",
+          "shap": 0.250514,
+          "effect": "increase"
+        },
+        {
+          "feature": "diastolic_bp",
+          "shap": 0.202574,
+          "effect": "increase"
+        },
+        {
+          "feature": "cholesterol",
+          "shap": 0.115614,
+          "effect": "increase"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "model_name": "lightgbm",
+  "feature_importance": [
+    {
+      "feature": "systolic_bp",
+      "mean_abs_shap": 0.794257
+    },
+    {
+      "feature": "age",
+      "mean_abs_shap": 0.291308
+    },
+    {
+      "feature": "cholesterol",
+      "mean_abs_shap": 0.253102
+    },
+    {
+      "feature": "weight",
+      "mean_abs_shap": 0.144587
+    },
+    {
+      "feature": "diastolic_bp",
+      "mean_abs_shap": 0.088942
+    },
+    {
+      "feature": "active",
+      "mean_abs_shap": 0.058187
+    },
+    {
+      "feature": "height",
+      "mean_abs_shap": 0.045033
+    },
+    {
+      "feature": "gluc",
+      "mean_abs_shap": 0.041579
+    },
+    {
+      "feature": "smoke",
+      "mean_abs_shap": 0.0253
+    },
+    {
+      "feature": "alco",
+      "mean_abs_shap": 0.021919
+    },
+    {
+      "feature": "sex",
+      "mean_abs_shap": 0.020058
+    }
+  ]
+}
