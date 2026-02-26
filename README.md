@@ -4,13 +4,16 @@
 
 ## 1️⃣ Project Overview
 
-Cardiovascular diseases (CVDs) are the leading cause of death globally. Early detection enables timely medical intervention and lifestyle modification. This project provides a **full-stack AI healthcare decision-support system** that predicts heart disease risk using both **clinical diagnostic data** and **large-scale population screening data**.
+Cardiovascular diseases (CVDs) are one of the leading causes of death worldwide. Early identification of risk enables preventive treatment and improves patient outcomes.This project is a full-stack AI healthcare decision support system designed to assist:
+- 🩺 Healthcare professionals during clinical diagnosis.
+- ❤️ General users through early lifestyle risk screening.
 
-The system demonstrates the complete AI lifecycle:
+The system predicts heart disease risk and also provides:
+- Risk level interpretation.
+- Risk factor explanations.
+- Personalized health recommendations.
 
-**Data Ingestion → EDA → Preprocessing → Safe Training → Evaluation → REST API → React Frontend.**
-
-The goal is not only prediction accuracy but also **clinical trust, scalability, and real-world applicability**.
+The solution evolved through multiple experimental approaches (Approach-1 → Approach-N) to address real-world healthcare challenges.
 
 ---
 
@@ -22,6 +25,7 @@ The goal is not only prediction accuracy but also **clinical trust, scalability,
 | **Data Analysis** | Pandas, NumPy |
 | **Visualization** | Matplotlib, Seaborn |
 | **Machine Learning** | Scikit-learn, LightGBM, XGBoost |
+| **Explainability** | SHAP |
 | **Deep Learning (Experimental)** | TensorFlow / Keras |
 | **Backend** | FastAPI (Uvicorn) |
 | **Frontend** | React 18 (Vite) |
@@ -282,7 +286,25 @@ React 18 + Vite interface with two user-friendly prediction modes:
 
 ---
 
-## 9️⃣ Setup
+## 9️⃣ Explainability — Risk Factors & Transparency
+This system includes an Explainability layer that highlights the most influential patient health factors contributing to the prediction.
+- Examples:
+  **Positive Health Factors**
+🟢 Healthy Blood Pressure
+🟢 Good Cholesterol Levels
+🟢 Active Lifestyle
+  **Risk Factors**
+🔴 Elevated Cholesterol
+🔴 High Resting Blood Pressure
+🔴 Smoking Habit.
+
+- Risk factors are generated using rule-based clinical interpretation combined with model probability outputs.
+
+**⭐ Health Recommendation Engine:**
+
+Beyond prediction, the system provides personalized preventive suggestions.
+
+## 🔟 Setup
 
 Run the entire system:
 
@@ -297,4 +319,61 @@ Run the entire system:
 
 ---
 
+## 🔄 System Workflow
+
+```
+┌─────────────────────────────┐
+│     User (Browser)          │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│  React Frontend (Port 5173) │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│ Submit Patient Details (JSON)│
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│ FastAPI Backend (Port 8000)  │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│  Input Validation (Pydantic) │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│   Singleton Model Loader     │
+│   (load once at startup)     │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│ Selected ML Model Pipeline   │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│      predict_proba()         │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│    Risk Classification       │
+│  (Low / Moderate / High)     │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│    Risk Factors Generated    │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│ Recommendations Generated    │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│       JSON Response          │
+└──────────────┬──────────────┘
+               ▼
+┌─────────────────────────────┐
+│   Frontend Result Card       │
+└─────────────────────────────┘
+```
 
