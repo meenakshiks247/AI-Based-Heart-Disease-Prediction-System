@@ -19,6 +19,28 @@ const HeartIcon = () => (
   </svg>
 )
 
+/* ─── dropdown / select option maps ─── */
+const SELECT_OPTIONS = {
+  clinical: {
+    sex:     [{ value: 1, label: 'Male' }, { value: 0, label: 'Female' }],
+    cp:      [{ value: 0, label: 'Typical Angina' }, { value: 1, label: 'Atypical Angina' }, { value: 2, label: 'Non-Anginal Pain' }, { value: 3, label: 'Asymptomatic' }],
+    fbs:     [{ value: 0, label: 'No (≤ 120 mg/dl)' }, { value: 1, label: 'Yes (> 120 mg/dl)' }],
+    restecg: [{ value: 0, label: 'Normal' }, { value: 1, label: 'ST-T Abnormality' }, { value: 2, label: 'Left Ventricular Hypertrophy' }],
+    exang:   [{ value: 0, label: 'No' }, { value: 1, label: 'Yes' }],
+    slope:   [{ value: 0, label: 'Upsloping' }, { value: 1, label: 'Flat' }, { value: 2, label: 'Downsloping' }],
+    ca:      [{ value: 0, label: '0' }, { value: 1, label: '1' }, { value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }],
+    thal:    [{ value: 0, label: 'Normal' }, { value: 1, label: 'Fixed Defect' }, { value: 2, label: 'Reversible Defect' }, { value: 3, label: 'Thalassemia' }],
+  },
+  cardio: {
+    sex:         [{ value: 1, label: 'Female' }, { value: 2, label: 'Male' }],
+    cholesterol: [{ value: 1, label: 'Normal — < 200 mg/dL' }, { value: 2, label: 'Above Normal — 200–239 mg/dL' }, { value: 3, label: 'Well Above Normal — ≥ 240 mg/dL' }],
+    gluc:        [{ value: 1, label: 'Normal — < 100 mg/dL' }, { value: 2, label: 'Above Normal — 100–125 mg/dL' }, { value: 3, label: 'Well Above Normal — ≥ 126 mg/dL' }],
+    smoke:       [{ value: 0, label: 'No' }, { value: 1, label: 'Yes' }],
+    alco:        [{ value: 0, label: 'No' }, { value: 1, label: 'Yes' }],
+    active:      [{ value: 0, label: 'No' }, { value: 1, label: 'Yes' }],
+  },
+}
+
 /* ─── model definitions ─── */
 export const MODELS = {
   clinical: {
@@ -32,12 +54,12 @@ export const MODELS = {
       restecg: 0, thalach: 150, exang: 0, oldpeak: 1.0, slope: 1, ca: 0, thal: 2,
     },
     labels: {
-      age: 'Age', sex: 'Sex (1 = Male, 0 = Female)', cp: 'Chest Pain Type (0–3)',
+      age: 'Age', sex: 'Sex', cp: 'Chest Pain Type',
       trestbps: 'Resting Blood Pressure', chol: 'Cholesterol (mg/dl)',
-      fbs: 'Fasting Blood Sugar > 120 (1/0)', restecg: 'Resting ECG (0–2)',
-      thalach: 'Max Heart Rate', exang: 'Exercise‑Induced Angina (1/0)',
-      oldpeak: 'ST Depression (Oldpeak)', slope: 'Slope of Peak ST (0–2)',
-      ca: 'Major Vessels Colored (0–4)', thal: 'Thalassemia (0–3)',
+      fbs: 'Fasting Blood Sugar > 120', restecg: 'Resting ECG',
+      thalach: 'Max Heart Rate', exang: 'Exercise‑Induced Angina',
+      oldpeak: 'ST Depression (Oldpeak)', slope: 'Slope of Peak ST',
+      ca: 'Major Vessels Colored', thal: 'Thalassemia',
     },
     floatFields: ['oldpeak'],
     /* split for two-panel layout */
@@ -55,11 +77,11 @@ export const MODELS = {
       diastolic_bp: 80, cholesterol: 1, gluc: 1, smoke: 0, alco: 0, active: 1,
     },
     labels: {
-      age: 'Age (years)', sex: 'Sex (1 = Female, 2 = Male)',
+      age: 'Age (years)', sex: 'Sex',
       height: 'Height (cm)', weight: 'Weight (kg)',
-      systolic_bp: 'Systolic BP (ap_hi)', diastolic_bp: 'Diastolic BP (ap_lo)',
-      cholesterol: 'Cholesterol (1–3)', gluc: 'Glucose (1–3)',
-      smoke: 'Smoking (0/1)', alco: 'Alcohol (0/1)', active: 'Active (0/1)',
+      systolic_bp: 'Systolic BP', diastolic_bp: 'Diastolic BP',
+      cholesterol: 'Cholesterol Level', gluc: 'Glucose Level',
+      smoke: 'Smoking', alco: 'Alcohol Intake', active: 'Physically Active',
     },
     floatFields: ['age', 'weight'],
     leftPanel:  { title: 'Health Status', icon: '🫀', fields: ['age', 'sex', 'height', 'weight', 'systolic_bp', 'diastolic_bp'] },
@@ -97,6 +119,13 @@ const PredictionForm = forwardRef(function PredictionForm({ onResult, onError },
     if (parsed !== '' && !Number.isNaN(parsed)) {
       setFieldErrors((prev) => { const c = { ...prev }; delete c[name]; return c })
     }
+  }
+
+  const handleSelectChange = (e) => {
+    const { name, value } = e.target
+    const parsed = parseInt(value, 10)
+    setFormData((prev) => ({ ...prev, [name]: parsed }))
+    setFieldErrors((prev) => { const c = { ...prev }; delete c[name]; return c })
   }
 
   const validate = () => {
@@ -137,27 +166,46 @@ const PredictionForm = forwardRef(function PredictionForm({ onResult, onError },
   }
 
   /* render a group of fields inside a panel card */
+  const selectOpts = SELECT_OPTIONS[modelKey] || {}
+
   const renderPanel = (panel) => (
     <div className="pf-panel" key={panel.title}>
       <h3 className="pf-panel__heading">
         <span className="pf-panel__icon">{panel.icon}</span> {panel.title}
       </h3>
       <div className="pf-panel__grid">
-        {panel.fields.map((key) => (
-          <div className={`pf-field ${fieldErrors[key] ? 'pf-field--error' : ''}`} key={key}>
-            <label htmlFor={key}>{model.labels[key]}</label>
-            <input
-              id={key}
-              name={key}
-              type="number"
-              step={model.floatFields.includes(key) ? '0.1' : '1'}
-              value={formData[key]}
-              onChange={handleChange}
-              required
-            />
-            {fieldErrors[key] && <span className="pf-field__err">{fieldErrors[key]}</span>}
-          </div>
-        ))}
+        {panel.fields.map((key) => {
+          const opts = selectOpts[key]
+          return (
+            <div className={`pf-field ${fieldErrors[key] ? 'pf-field--error' : ''}`} key={key}>
+              <label htmlFor={key}>{model.labels[key]}</label>
+              {opts ? (
+                <select
+                  id={key}
+                  name={key}
+                  value={formData[key]}
+                  onChange={handleSelectChange}
+                  required
+                >
+                  {opts.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  id={key}
+                  name={key}
+                  type="number"
+                  step={model.floatFields.includes(key) ? '0.1' : '1'}
+                  value={formData[key]}
+                  onChange={handleChange}
+                  required
+                />
+              )}
+              {fieldErrors[key] && <span className="pf-field__err">{fieldErrors[key]}</span>}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -330,9 +378,9 @@ const PredictionForm = forwardRef(function PredictionForm({ onResult, onError },
           color: #b0aec1;
           text-transform: uppercase;
           letter-spacing: 0.4px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          white-space: normal;
+          word-wrap: break-word;
+          line-height: 1.4;
         }
         .pf-field input {
           width: 100%;
@@ -346,11 +394,36 @@ const PredictionForm = forwardRef(function PredictionForm({ onResult, onError },
           outline: none;
           font-family: inherit;
         }
-        .pf-field input:focus {
+        .pf-field select {
+          width: 100%;
+          padding: 10px 14px;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 8px;
+          background: rgba(255,255,255,0.07);
+          color: #f0f0f0;
+          font-size: 0.95rem;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          outline: none;
+          font-family: inherit;
+          cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23908fa5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 14px center;
+          padding-right: 36px;
+        }
+        .pf-field select option {
+          background: #1a1a2e;
+          color: #f0f0f0;
+        }
+        .pf-field input:focus,
+        .pf-field select:focus {
           border-color: #7f5af0;
           box-shadow: 0 0 0 3px rgba(127,90,240,0.25);
         }
-        .pf-field--error input {
+        .pf-field--error input,
+        .pf-field--error select {
           border-color: #ff453a;
           box-shadow: 0 0 0 2px rgba(255,69,58,0.25);
         }
